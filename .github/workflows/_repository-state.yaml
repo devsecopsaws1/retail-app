@@ -55,7 +55,7 @@ jobs:
         with:
           config_path: .github/labeler.yaml
         env:
-          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN_ }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_ }}
 
       
 
