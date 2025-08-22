@@ -4,10 +4,12 @@ on:
     branches:
       - prod
       - stage
+      - dev
   pull_request:
     branches:
       - prod
       - stage
+      - dev
 
 permissions:
   id-token: write   # if you need OIDC
