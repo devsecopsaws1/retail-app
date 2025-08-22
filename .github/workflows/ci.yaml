@@ -24,7 +24,7 @@ jobs:
         uses: haya14busa/action-cond@v1
         id: get-environment-name
         with:
-          condition: ${{github.event_name == 'pull_request'}}
+          cond: ${{github.event_name == 'pull_request'}}
           if_true: ${{github.base_ref}}  #if it's a PR, use the base branch name,Target branch name of the PR
           if_false: ${{github.ref}} #otherwise, use the current branch name
   
