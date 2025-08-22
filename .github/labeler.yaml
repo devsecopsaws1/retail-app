@@ -1,0 +1,11 @@
+version: 1
+labels:
+  - label: github-actions
+    files:
+      - .github/*
+  - label: src
+    files:
+      - src/**
+  - label: terraform
+    files:
+      - infrastructure/*
