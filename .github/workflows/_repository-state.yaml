@@ -53,7 +53,7 @@ jobs:
         uses: srvaroa/labeler@v1.13.0
         if: ${{ inputs.pull-request }}
         with:
-          config_path: .github/labeler.yml
+          config_path: .github/labeler.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN_ }}
 
