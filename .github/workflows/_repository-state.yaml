@@ -28,7 +28,7 @@ on:
         default: false
         type: boolean
     secrets:
-      MY_GITHUB_TOKEN: 
+      GITHUB_TOKEN_: 
              required: true
              description: 'GitHub token for accessing repository metadata'
 jobs:
@@ -39,7 +39,7 @@ jobs:
       pull-requests: write
     environment: ${{ inputs.environment-name }}
     env :
-      GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_ }}
 
     steps:
       - name: Checkout repository

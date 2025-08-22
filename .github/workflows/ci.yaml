@@ -42,7 +42,7 @@ jobs:
       publish: ${{ github.event_name == 'push' }}
       hotfix: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[hotfix]') }}
     secrets:
-      GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      GITHUB_TOKEN_: ${{ secrets.MY_GITHUB_TOKEN }}
 
 #"""You’re calling another reusable workflow (./.github/workflows/_repository-state.yaml) inside your main workflow with a job named get-repository-state."""
 #That job is being passed inputs (with:) and secrets (secrets:). Here’s what each piece means:
