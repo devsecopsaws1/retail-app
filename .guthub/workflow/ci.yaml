@@ -1,0 +1,30 @@
+name: Deployment Workflow
+on:
+  push:
+    branches:
+      - prod
+      - stage
+  pull_request:
+    branches:
+      - prod
+      - stage
+
+concurrency:  #This tells github actions to 
+  group: deployment ${{ github.ref }} #to group by branch name
+  cancel-in-progress: false #not to cancel any in-progress runs
+
+jobs:
+  get-environment:
+    name: Get Environment name
+    runs-on: ubuntu-latest
+    outputs:
+      environment-name: ${{ steps.get-environment-name.outputs.value }}
+    steps:
+      - name : Get environment name
+        uses: haya14busa/action-cond@v1
+        id: get-environment-name
+        with:
+          condition: ${{github.event_name == 'pull_request'}}
+          if_true: ${{github.base_ref}}  #if it's a PR, use the base branch name,Target branch name of the PR
+          if_false: ${{github.ref}} #otherwise, use the current branch name
+  
