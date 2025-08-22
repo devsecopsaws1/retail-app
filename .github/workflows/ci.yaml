@@ -26,5 +26,5 @@ jobs:
         with:
           cond: ${{github.event_name == 'pull_request'}}
           if_true: ${{github.base_ref}}  #if it's a PR, use the base branch name,Target branch name of the PR
-          if_false: ${{github.ref}} #otherwise, use the current branch name
+          if_false: ${{github.ref_name}} #otherwise, use the current branch name
   
