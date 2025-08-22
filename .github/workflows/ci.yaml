@@ -9,6 +9,11 @@ on:
       - prod
       - stage
 
+permissions:
+  id-token: write   # if you need OIDC
+  contents: write   # required because _repository-state.yaml requests it
+  pull-requests: write
+
 concurrency:  #This tells github actions to 
   group: deployment ${{ github.ref_name }} #to group by branch name
   cancel-in-progress: false #not to cancel any in-progress runs
