@@ -1,0 +1,116 @@
+name: Deployment Workflow
+on:
+  push:
+    branches:
+      - prod
+      - stage
+  pull_request:
+    branches:
+      - prod
+      - stage
+
+permissions:
+  id-token: write   # if you need OIDC
+  contents: write   # required because _repository-state.yaml requests it
+  pull-requests: write
+
+concurrency:  #This tells github actions to 
+  group: deployment ${{ github.ref_name }} #to group by branch name
+  cancel-in-progress: false #not to cancel any in-progress runs
+
+jobs:
+  get-environment:
+    name: Get Environment name
+    runs-on: ubuntu-latest
+    outputs:
+      environment-name: ${{ steps.get-environment-name.outputs.value }}
+    steps:
+      - name : Get environment name
+        uses: haya14busa/action-cond@v1
+        id: get-environment-name
+        with:
+          cond: ${{github.event_name == 'pull_request'}}
+          if_true: ${{github.base_ref}}  #if it's a PR, use the base branch name,Target branch name of the PR
+          if_false: ${{github.ref_name}} #otherwise, use the current branch name
+  #===================================
+  # Get Respository State
+  #===================================
+  get-repository-state:
+    name: Get Repository metadata
+    uses: ./.github/workflows/_repository-state.yaml
+    needs: get-environment
+    with:
+      environment-name: ${{ needs.get-environment.outputs.environment-name }}
+      pull-request: ${{ github.event_name == 'pull_request' }}
+      base-ref: ${{ github.base_ref }}
+      pre-release: ${{ github.ref_name == 'stage' }}
+      publish: ${{ github.event_name == 'push' }}
+      hotfix: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[hotfix]') }}
+    secrets:
+      GITHUB_TOKEN_: ${{ secrets.MY_GITHUB_TOKEN }}
+
+#"""You’re calling another reusable workflow (./.github/workflows/_repository-state.yaml) inside your main workflow with a job named get-repository-state."""
+#That job is being passed inputs (with:) and secrets (secrets:). Here’s what each piece means:
+#1. uses: ./.github/workflows/_repository-state.yamlThis tells GitHub Actions: “Run the reusable workflow defined in my repo at .github/workflows/_repository-state.yaml”.
+#So instead of writing everything inline, you’ve modularized it into a reusable workflow.
+
+#Inputs (with: section) These are parameters passed into the reusable workflow:
+
+#base-ref Target branch of the PR (e.g., stage if PR is feature → stage).For push events, this is usually empty.
+
+
+# pre-release
+
+# Boolean flag.
+
+# Will be true if the branch is stage.
+
+# So you can mark stage deployments as “pre-release” automatically.
+
+# publish
+
+# Boolean flag.
+
+# Will be true if the event is a direct push (not PR).
+
+# Typically used to decide whether to publish artifacts or deploy.
+
+# hotfix
+
+# Boolean flag.
+
+# Will be true if the event is a push and the commit message contains [hotfix].
+
+# That way, you can run extra steps (like patching production) only for hotfix commits.*/
+
+  #============================ 
+  # Infrastructure
+  #============================
+
+  run-infrastructure:
+    name: Run Infrastructure
+    uses: ./.github/workflows/_infrastructure.yaml
+    needs: [ get-repository-state, get-environment ]
+    strategy:
+      max-parallel: 5
+      fail-fast: false
+      matrix:
+          stack:
+             - name: eks
+               runner-kind: ubuntu-latest
+
+    with:
+      environment-name: ${{ needs.get-environment.outputs.environment-name }}
+      stack: ${{ matrix.stack.name }}
+      runner-kind: ${{ matrix.stack.runner-kind }}
+      pull-request: ${{ github.event_name == 'pull_request' }}
+    secrets:
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+
+  #============================
+  # Deployment
+  #============================

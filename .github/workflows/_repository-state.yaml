@@ -1,0 +1,78 @@
+name: Retrieve Repository State
+
+on: 
+   workflow_call:
+    inputs:
+      environment-name:
+        required: true
+        default: stage
+        type: string
+      pull-request:
+        required: true
+        default: true
+        type: boolean
+      base-ref:
+        required: true
+        default: stage
+        type: string
+      pre-release:
+        required: true
+        default: false
+        type: boolean
+      publish:
+        required: true
+        default: true
+        type: boolean
+      hotfix:
+        required: true
+        default: false
+        type: boolean
+    secrets:
+      GITHUB_TOKEN_: 
+             required: true
+             description: 'GitHub token for accessing repository metadata'
+jobs:
+  get-stage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    environment: ${{ inputs.environment-name }}
+    env :
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_ }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Export current working directory
+        id: export-working-dir
+        run: |
+           echo "workdir=$GITHUB_WORKSPACE" >> $GITHUB_OUTPUT
+
+      - name: Tag pull pull request 
+        uses: srvaroa/labeler@v1.13.0
+        if: ${{ inputs.pull-request }}
+        with:
+          config_path: .github/labeler.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_ }}
+      
+      
+
+
+
+# By default GitHub Actions jobs run with read-only permissions for most scopes.
+
+# If your job needs to push commits, update files, or comment on PRs, you need to grant extra permissions.
+
+# Here:
+
+# contents: write → allows writing to the repository contents (e.g., pushing commits, creating tags, releases).
+
+# pull-requests: write → allows the workflow to add comments, labels, or update PR metadata.
+
+# 👉 Without this, if your workflow tries to push a commit (git push) or add a PR comment, it will fail with Resource not accessible by integration.
+
+#srvaroa/labeler is a GitHub Action that automatically adds/removes labels on pull requests based on rules defined in .github/labeler.yml.
+
