@@ -1,0 +1,70 @@
+name: Validate infrastructure code
+on:
+  workflow_call:
+    inputs:
+      environment-name:
+        required: true
+        default: stage
+        type: string
+      stack:
+        required: true
+        type: string
+      runner-kind:
+        required: true
+        type: string
+      pull-request:
+        required: true
+        default: true
+        type: boolean
+    secrets:
+      AWS_ACCOUNT_ID:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_REGION:
+        required: true
+      MY_GITHUB_TOKEN:
+        required: true
+
+jobs:
+   terraform-apply:
+      name: Terraform Apply ${{ inputs.stack }}
+      if: ${{ always() }}
+      runs-on: ${{ inputs.runner-kind }}
+      environment: ${{ inputs.environment-name }}
+      env:
+        AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        STACK: ${{ inputs.stack }}
+        PULL_REQUEST: ${{ inputs.pull-request }}
+  
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - name: Get Terraform version
+          id: get-terraform-version
+          run: |
+                echo "::set-output name=tf-version::$(cat .terraform-version)"
+
+        - name: Set up Terraform v${{ steps.get-terraform-version.outputs.tf-version }}
+          uses: hashicorp/setup-terraform@v2
+          with:
+            terraform_version: ${{ steps.get-terraform-version.outputs.tf-version }}
+
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ secrets.AWS_REGION }}
+
+        - name: Terraform init | ${{inputs.environment-name}} | ${{inputs.stack}}
+          id: terraform-init
+          run: make infrastructure.init/${{inputs.stack}} ENVIRONMENT=${{inputs.environment-name}}

@@ -4,10 +4,12 @@ on:
     branches:
       - prod
       - stage
+      - dev
   pull_request:
     branches:
       - prod
       - stage
+      - dev
 
 permissions:
   id-token: write   # if you need OIDC
@@ -82,3 +84,35 @@ jobs:
 # Will be true if the event is a push and the commit message contains [hotfix].
 
 # That way, you can run extra steps (like patching production) only for hotfix commits.*/
+
+  #============================ 
+  # Infrastructure
+  #============================
+
+  run-infrastructure:
+    name: Run Infrastructure
+    uses: ./.github/workflows/_infrastructure.yaml
+    needs: [ get-repository-state, get-environment ]
+    strategy:
+      max-parallel: 5
+      fail-fast: false
+      matrix:
+          stack:
+             - name: eks
+               runner-kind: ubuntu-latest
+
+    with:
+      environment-name: ${{ needs.get-environment.outputs.environment-name }}
+      stack: ${{ matrix.stack.name }}
+      runner-kind: ${{ matrix.stack.runner-kind }}
+      pull-request: ${{ github.event_name == 'pull_request' }}
+    secrets:
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+
+  #============================
+  # Deployment
+  #============================
