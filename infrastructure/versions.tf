@@ -1,0 +1,81 @@
+# =============================================================================
+# TERRAFORM AND PROVIDER VERSIONS
+# =============================================================================
+
+terraform {
+  required_version = ">= 1.0"
+
+  # S3 backend configuration
+  # Backend config is provided via -backend-config flag during terraform init
+  backend "s3" {
+    # Configuration will be provided via .env/{environment}/backend.tf files
+    # during terraform init -backend-config=.env/{env}/backend.tf
+  }
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = ">= 2.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = ">= 0.9"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = ">= 3.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.0"
+    }
+  }
+}
+
+# =============================================================================
+# PROVIDER CONFIGURATIONSS
+# =============================================================================
+
+provider "aws" {
+  region = var.aws_region
+
+  # # Assume role configuration for cross-account access
+  # dynamic "assume_role" {
+  #   for_each = var.assume_role_arn != null ? [1] : []
+  #   content {
+  #     role_arn     = var.assume_role_arn
+  #     session_name = "terraform-${var.environment}"
+  #     external_id  = var.assume_role_external_id
+  #   }
+  # }
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = module.retail_app_eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.retail_app_eks.cluster_certificate_authority_data)
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token", "--cluster-name", module.retail_app_eks.cluster_name]
+    }
+  }
+}
+
+provider "kubernetes" {
+  host                   = module.retail_app_eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.retail_app_eks.cluster_certificate_authority_data)
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", module.retail_app_eks.cluster_name]
+  }
+}
